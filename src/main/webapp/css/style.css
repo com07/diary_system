@@ -90,3 +90,16 @@ button {
     color: #721c24;
     background-color: #f8d7da;
 }
+tr.row1 {
+        background-color: #f2f2f2;
+}
+tr.row0 {
+        background-color: #ffffff;
+}
+table#diary_list th {
+    width: 30%;
+    padding: 10px 2%;
+    background-color: #ffc0cb5e;
+    text-align: center;
+    font-weight: bold;
+}
