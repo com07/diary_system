@@ -161,4 +161,112 @@ public class DiaryAction extends ActionBase {
             forward(ForwardConst.FW_DIARY_SHOW);
         }
     }
+    /**
+     * 物理削除を行う
+     * @throws ServletException
+     * @throws IOException
+     */
+    public void destroy() throws ServletException, IOException {
+
+        //CSRF対策 tokenのチェック
+        if (checkToken()) {
+
+            //idを条件に従業員データを論理削除する
+            service.destroy(toNumber(getRequestParam(AttributeConst.DIARY_ID)));
+
+            //セッションに削除完了のフラッシュメッセージを設定
+            putSessionScope(AttributeConst.FLUSH, MessageConst.I_DELETED.getMessage());
+
+            //一覧画面にリダイレクト
+            redirect(ForwardConst.ACT_DIARY, ForwardConst.CMD_INDEX);
+        }
+
+    }
+
+    /**
+     * 編集画面を表示
+     * @throws ServletException
+     * @throws IOException
+     */
+    public void edit() throws ServletException, IOException {
+
+//      System.out.println("edit" + toNumber(getRequestParam(AttributeConst.DIARY_ID)));
+
+        //idを条件に日記データを取得する
+        DiaryView dv = service.findOne(toNumber(getRequestParam(AttributeConst.DIARY_ID)));
+
+        //セッションにエラーメッセージが設定されている場合はリクエストスコープに移し替え、セッションからは削除する
+        List<String> errors = getSessionScope(AttributeConst.ERR);
+        if (errors != null) {
+            putRequestScope(AttributeConst.ERR, errors);
+            removeSessionScope(AttributeConst.ERR);
+        }
+        System.out.println(dv.getName());
+        // リクエストスコープにパラメータをセット
+        putRequestScope(AttributeConst.DIARY, dv); //取得した日記データ
+        putRequestScope(AttributeConst.TOKEN, getTokenId()); //CSRF対策用トークン
+
+        //          //idを条件に従業員データを論理削除する
+        //          service.destroy(toNumber(getRequestParam(AttributeConst.DIARY_ID)));
+        //
+        //          //セッションに削除完了のフラッシュメッセージを設定
+        //          putSessionScope(AttributeConst.FLUSH, MessageConst.I_DELETED.getMessage());
+
+        forward(ForwardConst.FW_DIARY_EDIT);
+
+    }
+    /**
+     * 更新を行う
+     * @throws ServletException
+     * @throws IOException
+     */
+    public void update() throws ServletException, IOException {
+
+        //CSRF対策 tokenのチェック
+        if (checkToken()) {
+            //idを条件に日記データを取得する
+            DiaryView dv = service.findOne(toNumber(getRequestParam(AttributeConst.DIARY_ID)));
+
+            //日報の日付が入力されていなければ、今日の日付を設定
+            LocalDate day = null;
+            if (getRequestParam(AttributeConst.DIARY_REP_DATE) == null
+                    || getRequestParam(AttributeConst.DIARY_REP_DATE).equals("")) {
+                day = LocalDate.now();
+            } else {
+                day = LocalDate.parse(getRequestParam(AttributeConst.DIARY_REP_DATE));
+            }
+
+            //パラメータの値をもとに日記インスタンスを更新する
+            dv.setName(getRequestParam(AttributeConst.DIARY_NAME));
+            dv.setReportDate(day);
+            dv.setTitle(getRequestParam(AttributeConst.DIARY_TITLE));
+            dv.setContent(getRequestParam(AttributeConst.DIARY_CONTENT));
+
+            //日報情報更新
+            List<String> errors = service.update(dv);
+
+            if (errors.size() > 0) {
+                //登録中にエラーがあった場合
+
+//              putRequestScope(AttributeConst.TOKEN, getTokenId()); //CSRF対策用トークン
+//              putSessionScope(AttributeConst.DIARY, dv);//入力された日記情報
+                putSessionScope(AttributeConst.ERR, errors);//エラーのリスト
+
+                //編集画面を再表示
+//              forward(ForwardConst.FW_DIARY_EDIT);
+                response.sendRedirect(context + "/?action=Diary&command=edit&id=" + dv.getId());
+
+
+            } else {
+                //登録中にエラーがなかった場合
+
+                //セッションに登録完了のフラッシュメッセージを設定
+                putSessionScope(AttributeConst.FLUSH, MessageConst.I_UPDATED.getMessage());
+
+                //一覧画面にリダイレクト
+                redirect(ForwardConst.ACT_DIARY, ForwardConst.CMD_INDEX);
+            }
+        }
+    }
+
 }
