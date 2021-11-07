@@ -130,4 +130,35 @@ public class DiaryAction extends ActionBase {
             }
         }
     }
+    /**
+     * 詳細画面を表示する
+     * @throws ServletException
+     * @throws IOException
+     */
+    public void show() throws ServletException, IOException {
+
+        //idを条件に日記データを取得する
+        DiaryView dv = service.findOne(toNumber(getRequestParam(AttributeConst.DIARY_ID)));
+
+        if (dv == null) {
+            //該当の日記データが存在しない場合はエラー画面を表示
+            forward(ForwardConst.FW_ERR_UNKNOWN);
+
+        } else {
+
+            //セッションにフラッシュメッセージが設定されている場合はリクエストスコープに移し替え、セッションからは削除する
+            String flush = getSessionScope(AttributeConst.FLUSH);
+            if (flush != null) {
+                putRequestScope(AttributeConst.FLUSH, flush);
+                removeSessionScope(AttributeConst.FLUSH);
+            }
+
+            // リクエストスコープにパラメータをセット
+            putRequestScope(AttributeConst.DIARY, dv); //取得した日記データ
+            putRequestScope(AttributeConst.TOKEN, getTokenId()); //CSRF対策用トークン
+
+            //詳細画面を表示
+            forward(ForwardConst.FW_DIARY_SHOW);
+        }
+    }
 }
